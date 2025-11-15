@@ -318,8 +318,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ---- Classifier (BERT) -------------------------------------------
-MODEL_DIR = Path(os.getenv("CLASSIFIER_MODEL_DIR", "./BERT_BEST"))
+# ===== BERT classifier from Hugging Face =====
+HF_MODEL_NAME = "your_hf_username/student-complaint-bert"  # <-- غيّرها لاسم موديلك على HF
+
 FALLBACK_LABELS = [
     "Certificates_Documents",
     "Courses_Training",
@@ -337,19 +338,22 @@ LABEL_ALIAS = {
 }
 
 @st.cache_resource(show_spinner=False)
-def load_model(model_dir: Path):
-    tok = AutoTokenizer.from_pretrained(model_dir)
-    mdl = AutoModelForSequenceClassification.from_pretrained(model_dir)
+def load_model():
+    tok = AutoTokenizer.from_pretrained(HF_MODEL_NAME)
+    mdl = AutoModelForSequenceClassification.from_pretrained(HF_MODEL_NAME)
     mdl.eval().to("cpu")
+
     id2label = getattr(mdl.config, "id2label", None)
     labels = None
     if isinstance(id2label, dict) and len(id2label):
         labels = [id2label.get(str(i), id2label.get(i)) for i in range(len(id2label))]
     if not labels:
         labels = FALLBACK_LABELS
+
     return tok, mdl, labels
 
-tokenizer, model, LABELS = load_model(MODEL_DIR)
+tokenizer, model, LABELS = load_model()
+
 
 def classify_top1(text: str):
     with torch.no_grad():
